@@ -1,6 +1,5 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
-using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.Logging;
 
 namespace RetailEdge.Inventory;
@@ -14,20 +13,7 @@ public sealed class InventoryRepository(
         CancellationToken cancellationToken = default)
     {
         await dbContext.Inventories.AddAsync(inventory, cancellationToken);
-        try
-        {
-            await dbContext.SaveChangesAsync(cancellationToken);
-        }
-        catch (DbUpdateException exception)
-            when (exception.InnerException is SqliteException
-            {
-                SqliteExtendedErrorCode: 2067
-            })
-        {
-            dbContext.Entry(inventory).State = EntityState.Detached;
-            throw new InventoryAlreadyExistsException(exception);
-        }
-
+        await dbContext.SaveChangesAsync(cancellationToken);
         dbContext.Entry(inventory).State = EntityState.Detached;
     }
 

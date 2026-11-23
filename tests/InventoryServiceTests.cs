@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
 using RetailEdge.Inventory;
 using InventoryRecord = RetailEdge.Inventory.Inventory;
+using InventoryResponse = RetailEdge.Inventory.InventoryResponse;
 using Xunit;
 
 namespace RetailEdge.Tests;
@@ -28,31 +29,33 @@ public sealed class InventoryServiceTests
         Guid firstStoreId = Guid.NewGuid();
         Guid secondStoreId = Guid.NewGuid();
 
-        InventoryRecord createdAtFirstStore =
-            await service.CreateAsync(firstStoreId, " product-123 ", 10);
-        InventoryRecord createdAtSecondStore =
-            await service.CreateAsync(secondStoreId, "product-123", 20);
-        InventoryRecord? fetchedAtFirstStore =
+        InventoryResponse createdAtFirstStore =
+            await service.CreateAsync(
+                firstStoreId,
+                new CreateInventoryRequest(" product-123 ", 10));
+        InventoryResponse createdAtSecondStore =
+            await service.CreateAsync(
+                secondStoreId,
+                new CreateInventoryRequest("product-123", 20));
+        InventoryResponse? fetchedAtFirstStore =
             await service.GetByProductAsync(firstStoreId, "product-123");
-        InventoryRecord updated = await service.UpdateStockAsync(
+        InventoryResponse updated = await service.UpdateStockAsync(
             firstStoreId,
             "product-123",
-            4,
-            createdAtFirstStore.Version);
-        InventoryRecord? fetchedAfterUpdate =
+            new UpdateInventoryStockRequest(4, createdAtFirstStore.Version));
+        InventoryResponse? fetchedAfterUpdate =
             await service.GetByProductAsync(firstStoreId, "product-123");
 
         await Assert.ThrowsAsync<InventoryConcurrencyException>(
             () => service.UpdateStockAsync(
                 firstStoreId,
                 "product-123",
-                7,
-                createdAtFirstStore.Version));
+                new UpdateInventoryStockRequest(7, createdAtFirstStore.Version)));
 
-        InventoryRecord? secondStoreInventory =
+        InventoryResponse? secondStoreInventory =
             await service.GetByProductAsync(secondStoreId, "product-123");
         bool deleted = await service.DeleteAsync(firstStoreId, "product-123");
-        InventoryRecord? fetchedAfterDelete =
+        InventoryResponse? fetchedAfterDelete =
             await service.GetByProductAsync(firstStoreId, "product-123");
 
         Assert.Equal("product-123", createdAtFirstStore.ProductId);
@@ -86,9 +89,13 @@ public sealed class InventoryServiceTests
             NullLogger<InventoryRepository>.Instance));
 
         await Assert.ThrowsAsync<ArgumentOutOfRangeException>(
-            () => service.CreateAsync(Guid.NewGuid(), "product-123", -1));
+            () => service.CreateAsync(
+                Guid.NewGuid(),
+                new CreateInventoryRequest("product-123", -1)));
         await Assert.ThrowsAsync<ArgumentException>(
-            () => service.CreateAsync(Guid.Empty, "product-123", 1));
+            () => service.CreateAsync(
+                Guid.Empty,
+                new CreateInventoryRequest("product-123", 1)));
     }
 
     [Fact]
@@ -107,10 +114,14 @@ public sealed class InventoryServiceTests
             NullLogger<InventoryRepository>.Instance));
         Guid storeId = Guid.NewGuid();
 
-        await service.CreateAsync(storeId, "product-123", 5);
+        await service.CreateAsync(
+            storeId,
+            new CreateInventoryRequest("product-123", 5));
 
         await Assert.ThrowsAsync<InventoryAlreadyExistsException>(
-            () => service.CreateAsync(storeId, "product-123", 8));
+            () => service.CreateAsync(
+                storeId,
+                new CreateInventoryRequest("product-123", 8)));
     }
 
     [Fact]
@@ -129,7 +140,9 @@ public sealed class InventoryServiceTests
             firstDbContext,
             NullLogger<InventoryRepository>.Instance);
         var service = new InventoryService(firstRepository);
-        await service.CreateAsync(storeId, "product-456", 12);
+        await service.CreateAsync(
+            storeId,
+            new CreateInventoryRequest("product-456", 12));
 
         await using var secondDbContext = new InventoryDbContext(options);
         var secondRepository = new InventoryRepository(

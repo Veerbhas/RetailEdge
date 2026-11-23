@@ -49,10 +49,15 @@ RetailEdge/
 │   │   ├── InventoryRepository.cs
 │   │   ├── InventoryServiceCollectionExtensions.cs
 │   │   ├── InventoryConcurrencyException.cs
+│   │   ├── InventoryContracts.cs
+│   │   ├── IInventoryService.cs
 │   │   └── Migrations/
+│   ├── security/
+│   │   └── RetailEdgeAuthenticationExtensions.cs
 │   └── cart/
 ├── tests/
 │   ├── InventoryServiceTests.cs
+│   ├── InventoryJwtAuthenticationTests.cs
 │   └── RetailEdge.Tests.csproj
 ├── README.md
 └── RetailEdge.csproj
@@ -84,6 +89,30 @@ identity is guessed automatically.
 Creating a second inventory record for the same store and product raises
 `InventoryAlreadyExistsException`. The optimistic version must be refreshed
 after a concurrency conflict before retrying an update.
+
+The inventory application service accepts allowlisted
+`CreateInventoryRequest` and `UpdateInventoryStockRequest` records and returns
+`InventoryResponse`; it does not expose EF entities as service results. The
+requests intentionally omit `StoreId`: an API host must derive the authorized
+store from its authenticated principal and pass that scope to the service.
+Inventory tracks quantities only and has no monetary field; monetary amounts
+belong in the relevant pricing/order model and must use `decimal`.
+
+## JWT authentication setup
+
+The project provides `AddRetailEdgeJwtAuthentication(configuration)` from
+`RetailEdge.Security` for API hosts. Configure `Authentication:Jwt:Algorithm`
+to exactly `RS256` or `HS256`, and provide `Issuer` and `Audience`. RS256
+requires `RsaPublicKeyPem` with a
+minimum 2048-bit public key. HS256 requires `HmacSigningKeyBase64` containing at
+least 32 random bytes. Supply key material through a managed secret/configuration
+provider or environment variables; never commit signing keys. The validator
+pins the configured algorithm, requires a signature, issuer, audience, `exp`,
+`nbf`, and numeric `iat`, and rejects future-issued tokens beyond a 30-second
+clock skew. API hosts must include `UseAuthentication()` before
+`UseAuthorization()`. This library setup does not by itself implement endpoints
+or resource-level authorization; each host must authorize the requested store
+against trusted claims before calling inventory operations.
 
 ## Engineering goals
 

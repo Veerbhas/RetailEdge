@@ -223,3 +223,153 @@ Create REVIEW.md — A structured code review documenting every issue found abov
 ```text
 Review and Rewrite the Inventory Sync module to support production standards
 ```
+
+## 13. Inventory remediation and security requirements
+
+```text
+Review REVIEW.md file and work on Remediation and make sure it will below points also
+
+•	Remediated Inventory Sync Model (using ORM, decimal for monetary values)
+•	Inventory Sync Repository (data access layer — ORM-based, no raw database driver)
+•	Remediated Inventory Sync Service (business logic only — no SQL, no DB imports, no direct model binding, DTO whitelisting visible)
+•	JWT middleware showing algorithm pinning (RS256/HS256) and token expiry validation
+```
+
+## 14. SPEC.md creation request
+
+```text
+now i have to work on '**Cart Abandonment Recovery Feature **'
+
+and below is details , but before that create SPEC.md  for 'Build the Cart Abandonment Recovery system on top of the remediated Inventory Sync module, using SPEC.md as your implementation blueprint.'
+
+
+**Abandoned Cart Model**
+
+A cart record with fields:
+customer ID, session ID, list of items (product ID, quantity, unit price —
+stored as decimal), cart total (decimal — never float), currency, abandonment
+timestamp, recovery status (pending / notified / converted / expired), voucher
+code (nullable), and recovery timestamp (nullable). Model must include a
+version integer field for optimistic concurrency control.
+
+
+
+**Cart Abandonment Detection Service**
+
+Business logic that:
+
+•       
+Queries for carts inactive for 30 or more minutes with
+status pending checkout — query must use the declared composite index
+
+•       
+Processes carts in configurable batches; commits each
+batch independently; tracks the last processed cursor for restartability
+
+•       
+Marks qualifying carts as abandoned and records the
+abandonment timestamp
+
+•       
+Evaluates cart value against a configurable voucher
+threshold
+
+•       
+Generates a one-time discount voucher for high-value
+abandoned carts
+
+•       
+Triggers a notification event (email or push) with cart
+summary and optional voucher
+
+•       
+Handles the case where a customer has multiple
+abandoned carts (most recent takes priority)
+
+
+
+**Recovery Tracking Service**
+
+Business logic that:
+
+•       
+Listens for order completion events and matches them
+against open abandoned cart records
+
+•       
+Verifies that the completing customer ID matches the
+cart owner before marking recovery — Broken Object Level Authorisation check at
+the service layer
+
+•       
+Marks a recovery as successful (converted) when the
+customer completes purchase within 24 hours
+
+•       
+Marks recoveries as expired after the 24-hour window
+lapses without conversion
+
+•       
+Logs all state transitions for analytics
+
+
+
+**API Endpoints**
+
+•       
+POST /scan/abandoned-carts — Trigger abandonment
+detection scan (admin role only; returns 403 for non-admin tokens with
+machine-readable error code)
+
+•       
+GET /carts/:id/recovery — Get recovery status for a
+specific cart (must verify requesting user owns this cart — Broken Object Level
+Authorisation; return 403 if not)
+
+•       
+GET /analytics/recovery — Get recovery analytics
+summary for a date range using cursor-based pagination (admin role only;
+returns 403 for non-admin tokens)
+
+
+
+**Tests — Minimum 8 test cases covering:**
+
+•       
+Cart correctly flagged as abandoned after 30 minutes of
+inactivity
+
+•       
+Voucher generated when cart total exceeds the
+configured threshold
+
+•       
+No voucher generated when cart total is below the
+threshold
+
+•       
+Recovery marked as converted when order completed
+within 24 hours
+
+•       
+Recovery marked as expired when 24-hour window lapses
+
+•       
+Customer with multiple abandoned carts: only the most
+recent triggers a recovery workflow
+
+•       
+Broken Object Level Authorisation: customer A’s token
+attempting to access customer B’s cart recovery status must return 403, not 200
+
+Admin-only endpoint: non-admin token calling the scan trigger endpoint
+must return 403 with a machine-readable error code
+```
+
+## 15. Abandoned Cart Model request
+
+```text
+create the Cart Abandonment Recovery System :
+
+•	Generate Abandoned Cart Model (decimal for all monetary fields, version field, ORM with index declarations)
+```

@@ -1,235 +1,235 @@
-# Inventory Code Review
+# Inventory Sync Review and Remediation
 
-## Scope and summary
+## Scope and status
 
-Reviewed the generated inventory implementation in `src/inventory/`, its
-dependency-injection setup, project configuration, and the inventory tests.
-This is an architectural and security-oriented review, not a penetration test.
-No code fixes were applied as part of this review; recommended changes below
-remain open.
+Reviewed and remediated the Inventory Sync model, EF Core persistence, service
+contracts, and JWT validation registration. The repository has no running API
+host or inventory endpoints, so endpoint-level authorization and HTTP
+model-binding behavior remain host integration work, not claims that an
+endpoint vulnerability has been fully tested.
 
-The implementation has useful foundations: domain-level validation rejects
-negative stock, the database adds a nonnegative-stock check constraint, and a
-unique product index prevents duplicate inventory rows for the current model.
-The main design gaps are that inventory is not store-scoped, concurrent updates
-can overwrite one another, and persistence setup/schema evolution are coupled
-to SQLite and `EnsureCreated`.
+Copilot assisted with initial implementation and identifying code paths. Human
+engineering judgment was used to determine retail-specific store identity,
+stock concurrency semantics, safe DTO fields, and authentication key
+requirements. Findings below distinguish applied fixes from remaining
+integration work.
 
-## Findings
+## Findings and remediation
 
-### 1. Inventory identity is not store-scoped
+### 1. Inventory identity omitted store scope
 
-- **Location:** `src/inventory/model.cs`, `Inventory` properties; `src/inventory/InventoryDbContext.cs`, `OnModelCreating`
+- **Location:** `src/inventory/model.cs`, `Inventory`; `src/inventory/InventoryDbContext.cs`, `OnModelCreating`
 - **Severity:** High
-- **Issue and retail impact:** Inventory consists of `ProductId` and
-  `StockQuantity`, and `ProductId` is globally unique. A product stocked at two
-  physical stores cannot have separate quantities. Store-specific fulfilment
-  and stock availability therefore cannot be modeled correctly. Repository
-  queries also cannot enforce store scope.
-- **Detection:** Inspected the model fields and unique-index declaration and
-  compared them with the omnichannel retail context in `README.md`. Copilot
-  helped identify the missing scope as a candidate concern; engineering
-  judgment was required to determine that a global product key is inadequate
-  for store-level stock.
-- **Recommended fix:** Add a validated `StoreId` to the inventory identity.
-  Use a unique composite index on `(StoreId, ProductId)` and require authorized
-  store context in repository and service operations before exposing the
-  feature to callers.
+- **Status:** Remediated in the data model.
+- **Issue and retail impact:** A globally unique product inventory row could not
+  represent different on-hand quantities at separate stores and could not
+  support store-scoped stock lookups.
+- **Detection:** Compared model fields and unique-index configuration against
+  the omnichannel retail requirements in `README.md`. Copilot helped surface
+  the candidate gap; human domain judgment established that stock is
+  location-specific.
+- **Fix applied:** Added required `StoreId` and a unique composite
+  `(StoreId, ProductId)` index. Service and repository operations require both
+  the store context and product identifier. The API host must still derive and
+  authorize store context from trusted claims.
 
-### 2. Concurrent stock updates can overwrite newer values
+### 2. Stock updates could overwrite newer values
 
-- **Location:** `src/inventory/service.cs`, `InventoryService.UpdateStockAsync`; `src/inventory/InventoryRepository.cs`, `UpdateAsync`
+- **Location:** `src/inventory/model.cs`, `UpdateStock`; `src/inventory/service.cs`, `UpdateStockAsync`; `src/inventory/InventoryRepository.cs`, `UpdateAsync`
+- **Severity:** High
+- **Status:** Remediated using optimistic concurrency.
+- **Issue and retail impact:** An unconditional read-modify-save could allow
+  delayed POS or synchronization data to overwrite a newer stock count,
+  leading to overselling or missed availability.
+- **Detection:** Traced the update call path and checked the EF model for
+  concurrency configuration. Human judgment was needed to identify the
+  customer and operations consequences of stale inventory data.
+- **Fix applied:** Updates require an expected version. EF Core includes the
+  prior version in the update predicate, increments the version, and maps
+  concurrency conflicts to `InventoryConcurrencyException`. Tests use two
+  repository contexts to verify stale writes fail.
+- **Remaining decision:** Each upstream feed must define whether values are
+  absolute snapshots or quantity deltas and how retries are made idempotent.
+
+### 3. Service exposed persistence/domain entities
+
+- **Location:** `src/inventory/service.cs`, service operations
 - **Severity:** Medium
-- **Issue and retail impact:** The service reads a stock row, changes it, and
-  then saves an unconditional update. If two POS, e-commerce, or synchronization
-  updates race, the later save can overwrite a newer quantity with stale data.
-  Incorrect availability can lead to overselling or missed sales.
-- **Detection:** Traced the read-modify-save path through the service and
-  repository and checked the entity mapping for a concurrency token or version
-  check. Copilot helped surface concurrency as a review area; engineering
-  judgment was needed to relate the race to multiple retail stock sources.
-- **Recommended fix:** Define whether incoming values are authoritative
-  snapshots or deltas. For snapshots, add optimistic concurrency/version
-  checks and a conflict/reconciliation policy; for deltas, use an atomic,
-  idempotent update strategy.
+- **Status:** Remediated at the application-service boundary.
+- **Issue and retail impact:** Returning EF entities coupled callers to storage
+  shape and created a risk that a future HTTP layer would expose or bind
+  persistence fields.
+- **Detection:** Inspected public service signatures against the repository's
+  model/repository/service/controller architecture. Copilot generated the
+  original signatures; a human must choose safe application and API
+  boundaries.
+- **Fix applied:** Added sealed `CreateInventoryRequest`,
+  `UpdateInventoryStockRequest`, and `InventoryResponse` records plus
+  `IInventoryService`. The service maps between these allowlisted contracts
+  and the domain model. The write requests intentionally omit `StoreId`, `Id`,
+  and other persistence fields.
 
-### 3. Provider selection and schema lifecycle are coupled to SQLite
+### 4. Repository had provider-specific database-driver logic
 
-- **Location:** `src/inventory/InventoryServiceCollectionExtensions.cs`, `AddInventory` and `InitializeInventoryDatabaseAsync`
+- **Location:** `src/inventory/InventoryRepository.cs`
 - **Severity:** Medium
-- **Issue and retail impact:** Service registration hard-codes `UseSqlite`, and
-  startup uses `EnsureCreatedAsync`. This couples application setup to one
-  provider and does not provide a migration path for evolving an already
-  deployed schema. A schema change can become difficult to roll out safely
-  across retail services and environments.
-- **Detection:** Inspected the registration and initialization extension
-  methods and compared them with the README engineering goal to avoid vendor
-  lock-in. Copilot-assisted review surfaced the SQLite/`EnsureCreated` design;
-  choosing migration-based evolution is an engineering architecture decision.
-- **Recommended fix:** Configure the provider in the application composition
-  root while keeping inventory registration provider-agnostic. Use EF Core
-  migrations and an explicit deployment/startup migration strategy for
-  persistent environments.
+- **Status:** Remediated.
+- **Issue and retail impact:** Provider-specific SQLite exception inspection
+  coupled the data-access layer to a raw database driver and made provider
+  changes harder.
+- **Detection:** Reviewed repository imports and exception handling. Copilot
+  assisted with identifying the provider-specific branch; architectural
+  judgment determined the repository should use the ORM abstraction.
+- **Fix applied:** Repository reads/writes use EF Core only; no direct SQLite
+  driver types or raw SQL are used in the repository. The unique database
+  constraint remains the final duplicate protection. A service pre-check
+  returns `InventoryAlreadyExistsException` for an existing row; a rare
+  simultaneous insert race may still surface as an EF `DbUpdateException`
+  rather than being misclassified as a duplicate.
 
-### 4. Application service returns the persistence/domain entity directly
+### 5. Schema setup used `EnsureCreated`
 
-- **Location:** `src/inventory/service.cs`, `CreateAsync`, `GetByProductAsync`, and `UpdateStockAsync`
+- **Location:** `src/inventory/InventoryServiceCollectionExtensions.cs`, `MigrateInventoryDatabaseAsync`; `src/inventory/Migrations/`
 - **Severity:** Medium
-- **Issue and retail impact:** The service exposes the `Inventory` entity to
-  its callers. This makes consumers depend on the entity shape and makes it
-  easier for a future HTTP layer to expose or bind the persistence model
-  directly. That can constrain model evolution and increase accidental
-  over-posting or data-exposure risk.
-- **Detection:** Traced public service return types and compared the boundary
-  with the repository's stated model/repository/service/controller convention.
-  Copilot generated the service shape; an engineer must decide which types are
-  appropriate across an application or API boundary.
-- **Recommended fix:** Define explicit application result contracts and
-  request/response DTOs at delivery boundaries. Map permitted fields
-  deliberately; do not bind HTTP writes directly to the entity.
+- **Status:** Partially remediated.
+- **Issue and retail impact:** `EnsureCreated` does not provide a managed
+  schema-upgrade path for deployed retail data.
+- **Detection:** Inspected database initialization and compared it with
+  schema-evolution needs.
+- **Fix applied:** Added an EF Core initial migration and an explicit
+  `MigrateInventoryDatabaseAsync` method. Documentation instructs operators to
+  run it once as a deployment step.
+- **Remaining work:** Existing `EnsureCreated` databases need a reviewed
+  upgrade migration and approved store-ID backfill. The migration must not be
+  applied blindly to existing rows. SQLite is still selected in this module's
+  registration; provider selection should move to the host if multiple
+  providers are required.
 
-### 5. Repository methods commit independently
+### 6. Duplicate creates lacked a clear normal-path result
 
-- **Location:** `src/inventory/InventoryRepository.cs`, `AddAsync`, `UpdateAsync`, and `DeleteByProductAsync`
+- **Location:** `src/inventory/service.cs`, `CreateAsync`; unique index in `src/inventory/InventoryDbContext.cs`
 - **Severity:** Medium
-- **Issue and retail impact:** Each repository method calls `SaveChangesAsync`.
-  This is adequate for the current single-row operations, but future workflows
-  that must persist inventory together with an audit record, outbox event, or
-  other state have no explicit shared commit boundary. A partial write could
-  leave stock changes inconsistent with downstream retail events.
-- **Detection:** Inspected where `SaveChangesAsync` is called and compared it
-  with the README's durable/observable workflow and integration goals. This is
-  a forward-looking architectural limitation, not evidence that the present
-  single-row calls currently partially commit.
-- **Recommended fix:** When introducing multi-record workflows, define a
-  transaction/unit-of-work boundary above individual repository operations
-  (or use an outbox pattern for reliable event publication). Keep the current
-  simple boundary if no multi-record atomicity requirement exists.
+- **Status:** Partially remediated.
+- **Issue and retail impact:** Repeated sync/create requests could create
+  provider-specific failures without a stable normal-path result.
+- **Detection:** Compared create behavior with the unique store/product
+  constraint and considered retry behavior in a sync workflow.
+- **Fix applied:** The service checks for an existing store/product entry and
+  raises `InventoryAlreadyExistsException`; the unique index protects against
+  races and preserves data integrity.
+- **Remaining work:** Translate a concurrent unique-key race in a provider-
+  appropriate infrastructure adapter if callers require one uniform conflict
+  result across database providers.
 
-### 6. Expected persistence conflicts have no application-level outcome
+### 7. Test coverage omitted important retail cases
 
-- **Location:** `src/inventory/service.cs`, `CreateAsync`; `src/inventory/InventoryRepository.cs`, `AddAsync`
+- **Location:** `tests/InventoryServiceTests.cs`; `tests/InventoryJwtAuthenticationTests.cs`
 - **Severity:** Medium
-- **Issue and retail impact:** A duplicate product is prevented by a unique
-  database index, but the service does not translate that expected conflict
-  into a stable application result. A caller may receive a provider-specific
-  exception, making retries, API error mapping, and operational handling
-  provider-dependent.
-- **Detection:** Compared create behavior with the unique index and followed
-  repository exceptions through the service. Copilot can generate the
-  persistence constraint, but deciding the public conflict contract requires
-  application-level judgment.
-- **Recommended fix:** Translate recognized unique-key conflicts into a
-  domain/application conflict outcome while allowing cancellation and
-  unexpected database failures to propagate visibly. Add a duplicate-create
-  test.
+- **Status:** Partially remediated.
+- **Issue and retail impact:** Earlier tests did not verify store isolation,
+  stale stock writes, duplicate creation, or JWT security configuration.
+- **Detection:** Compared test scenarios to service branches, database
+  constraints, synchronization risks, and the repository's security
+  requirements.
+- **Fix applied:** Added SQLite-backed tests for store separation, stale
+  concurrency writes, duplicate creates, invalid store/negative quantity, and
+  CRUD. Added JWT tests for RS256 and HS256 signatures, algorithm pinning,
+  unsigned-token rejection, mandatory lifetime fields, expiry, and future
+  `iat`.
+- **Remaining work:** Add HTTP integration tests for bearer challenge behavior,
+  endpoint DTO binding, cross-store authorization, and error response codes
+  once the API host/endpoints are implemented.
 
-### 7. Automated coverage does not exercise key failure and race paths
+### 8. Store scope was not connected to authenticated authorization context
 
-- **Location:** `tests/InventoryServiceTests.cs`
-- **Severity:** Medium
-- **Issue and retail impact:** The current tests cover the SQLite CRUD path and
-  rejection of negative stock, but do not cover duplicate creates,
-  update-not-found, invalid product IDs, database failure behavior, or
-  concurrent updates. Those omissions leave important stock-integrity and
-  operational behavior unverified.
-- **Detection:** Read the test cases and compared their scenarios with the
-  service/repository branches and the README testing expectations. Copilot
-  assisted by adding basic happy-path coverage; engineering judgment is
-  required to choose high-impact retail failure and concurrency cases.
-- **Recommended fix:** Add focused tests for the listed validation and
-  persistence outcomes. Add deterministic concurrency/conflict tests after
-  selecting the stock update semantics and concurrency strategy.
+- **Location:** `src/inventory/service.cs`; future API integration
+- **Severity:** High if exposed without authorization
+- **Status:** Data access is store-scoped; endpoint-level BOLA controls remain
+  unimplemented because no endpoints exist.
+- **Issue and retail impact:** Requiring a `storeId` parameter alone does not
+  prove a caller is authorized for that store. An endpoint that accepts an
+  arbitrary client-provided store ID could expose or modify another store's
+  inventory.
+- **Detection:** Traced the store ID from service to query and searched for
+  endpoint and authenticated-principal integration. There is no API host in
+  this project.
+- **Fix applied:** The write DTOs omit `StoreId`; all repository access is
+  scoped by store and product.
+- **Required host fix:** Derive the store from validated claims or an
+  authorization service, verify the principal may operate on that store, then
+  call the service. Never treat authentication or a client-supplied ID alone
+  as authorization. Add cross-store BOLA tests at the endpoint layer.
 
-### 8. Service/repository operations do not accept store or caller scope
+## Required implementation checks
 
-- **Location:** `src/inventory/service.cs`, all public operations; `src/inventory/IInventoryRepository.cs`, all methods
-- **Severity:** Medium
-- **Issue and retail impact:** No store or authenticated-caller context is
-  represented in these operation contracts. There are no HTTP endpoints in
-  this code, so this is not a confirmed exploitable BOLA vulnerability today.
-  If exposed as-is, however, callers could not be restricted by store at this
-  layer, and a product ID alone would not prove authorization.
-- **Detection:** Inspected service/repository parameters and searched the
-  reviewed code for authentication, user context, and store identifiers. The
-  absence of an API limits exploitability assessment; human security judgment
-  is needed to prevent the service from becoming an unsafe endpoint dependency.
-- **Recommended fix:** Add store scope to the inventory model and repository
-  predicates. At the API boundary, derive authorized user/store context from
-  validated claims and enforce authorization for every read and mutation;
-  never trust a client-supplied object ID as authorization.
+### Remediated inventory model
 
-## Security-specific review
+The `Inventory` model is persisted with EF Core ORM configuration and
+store/product identity. It represents quantity only and has no price or other
+monetary field, so there is no monetary numeric type to choose in this model.
+If pricing is added to a product, cart, or order model, use `decimal`; do not
+introduce floating-point currency.
 
-The reviewed inventory code contains no JWT implementation, authentication
-middleware, HTTP controllers/endpoints, or request DTOs. Therefore the
-following are **not implemented surfaces**, rather than confirmed vulnerabilities:
+The model validates nonempty store IDs, normalized bounded product IDs, and
+nonnegative integer stock. The database independently enforces nonnegative
+quantity and unique store/product identity.
 
-- **JWT algorithm pinning:** No JWT verification code exists to assess whether
-  algorithms are pinned or `alg: none` is rejected. When authentication is
-  added, explicitly allow only the approved algorithm and validate signature,
-  issuer, audience, and key.
-- **Token expiry claims:** No token validation middleware exists to assess
-  `exp`, `iat`, or `nbf`. Configure and test all three when JWT authentication
-  is implemented.
-- **Mass assignment / DTO whitelisting:** There are no write endpoints or
-  model-binding DTOs. Keep API write DTOs allowlisted and map them explicitly
-  rather than binding requests to `Inventory`.
-- **Broken Object Level Authorisation:** There are no resource HTTP endpoints
-  to test. The service/repository also lack store/caller scope, so endpoint
-  authorization and scoped queries must be implemented before exposure.
+### Repository and service architecture
 
-Additional retail-specific checks:
+- `InventoryRepository` uses EF Core for data access and does not issue raw SQL
+  or use a direct database-driver API.
+- `InventoryService` contains validation, version handling, and mapping only;
+  it does not import EF Core or database namespaces.
+- `IInventoryService` and request/response records make service contracts
+  explicit.
+- The write records are allowlists: create accepts product ID and stock
+  quantity; update accepts stock quantity and expected version. Store scope is
+  supplied separately by the trusted caller, not request-body binding.
+- There are no HTTP endpoints yet; endpoint handlers must bind these DTOs, not
+  `Inventory` entities.
 
-- **Negative stock:** The model rejects negative values, and
-  `InventoryDbContext` declares a database check constraint. A missing stock
-  constraint was not found.
-- **Monetary precision:** The inventory model has no money, price, or cart
-  total fields; no `float` or `double` monetary value was found. Use `decimal`
-  if monetary values are introduced.
-- **Voucher exposure and customer PII logging:** No voucher, notification, or
-  customer data handling code exists in the reviewed inventory module, so
-  these risks are not applicable to this code.
+### JWT validation
 
-## Review process and use of Copilot
+`src/security/RetailEdgeAuthenticationExtensions.cs` registers JWT bearer
+authentication for API hosts and:
 
-Copilot generated the initial inventory implementation and assisted in
-identifying review areas such as store scoping, concurrency, and persistence
-setup. The review then inspected the README requirements, domain model,
-service/repository call paths, EF Core mapping and registration, and existing
-test coverage. Findings above were retained only where they could be tied to
-the current implementation; endpoint/JWT concerns were explicitly marked
-not applicable where those surfaces do not exist.
+- accepts only exact `RS256` or `HS256` configuration and sets
+  `TokenValidationParameters.ValidAlgorithms` to that single configured
+  algorithm;
+- requires signed tokens and validates the signing key, issuer, and audience;
+- requires `exp` and `nbf`, validates token lifetime, requires numeric `iat`,
+  rejects future-issued tokens beyond the configured 30-second clock skew, and
+  rejects expired tokens;
+- requires a 2048-bit RSA public key for RS256 or at least 32 bytes of
+  Base64-configured key material for HS256;
+- fails startup for missing configuration or unsupported algorithms instead
+  of silently disabling authentication.
 
-Copilot assistance does not establish that a design is safe or appropriate.
-Human engineering judgment was necessary to connect the global product
-identity to multi-store retail, assess stale stock overwrite consequences,
-distinguish a future BOLA risk from an active endpoint vulnerability, and
-choose where provider, transaction, and API boundaries should live. No
-production fixes were applied during this documentation review.
+Hosts must call `UseAuthentication()` before `UseAuthorization()`. Signing
+material must come from a managed secret/configuration provider, never source
+control. Since no host exists here, HTTP `401` responses, error codes, bearer
+middleware challenge behavior, and authorization policies remain integration
+tests to add at host creation. Real RS256 and HS256 token signatures are covered
+by the current unit tests.
 
 ## Issues Copilot Introduced That Required Human Judgment
 
-1. **Missing store scope (retail-specific).** Copilot generated inventory with
-   a globally unique `ProductId` and no `StoreId`. This prevents per-store
-   stock balances and would make safe store-scoped access impossible without
-   changing the model and repository contracts. Recognizing the requirement
-   depends on understanding that omnichannel inventory is location-specific,
-   not merely detecting a syntax or test failure. Add `StoreId`, use a
-   `(StoreId, ProductId)` key, and enforce authorized store scope in queries.
-
-2. **No authorization context in service operations (security upgrade).**
-   The generated service accepts product IDs but no authenticated user/store
-   scope. There is no HTTP endpoint yet, so this is a design gap and not a
-   demonstrated exploit. A human must ensure that future endpoints do not
-   assume an identifier grants access; derive scope from authenticated
-   context and enforce it on every fetch and mutation.
-
-3. **Stock updates lack concurrency semantics.** The generated read-modify-save
-   path has no version check and does not document how competing stock feeds
-   are reconciled. A human must understand POS and online stock synchronization
-   well enough to specify whether updates are snapshots or deltas and how
-   stale updates are rejected.
-
-The implementation does correctly validate against negative quantities and
-defines a database check constraint; missing stock validation was not found.
+1. **Missing store scope (retail-specific).** The initial generated model used
+   a global product key, preventing distinct store stock. Human retail-domain
+   judgment identified the need for store-level inventory. This has been
+   remediated with `StoreId`, a composite unique index, and store-scoped
+   repository operations.
+2. **No concurrency semantics.** The initial read-modify-save implementation
+   could overwrite fresh stock with stale POS/sync data. Human judgment was
+   needed to identify the operational impact and require a version strategy.
+   Optimistic concurrency is now implemented and tested; source-specific
+   snapshot/delta semantics remain a business integration decision.
+3. **No security boundary around store identifiers.** The original service
+   accepted product IDs without store or caller scope. Store scope is now
+   required, and request DTOs do not allow clients to set it. A human must
+   ensure the future API derives authorized store scope from claims; the
+   service parameter is not itself an authorization check.
+4. **No JWT verification controls existed.** Human review identified the need
+   to reject algorithm confusion and validate token lifetimes. JWT bearer
+   registration now pins RS256/HS256 and validates `exp`, `iat`, and `nbf`;
+   API-host integration and authorization still require implementation.

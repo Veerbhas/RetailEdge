@@ -15,7 +15,7 @@ public static class InventoryServiceCollectionExtensions
         services.AddDbContext<InventoryDbContext>(
             options => options.UseSqlite(connectionString));
         services.AddScoped<IInventoryRepository, InventoryRepository>();
-        services.AddScoped<InventoryService>();
+        services.AddScoped<IInventoryService, InventoryService>();
 
         return services;
     }

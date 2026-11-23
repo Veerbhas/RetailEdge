@@ -1,0 +1,13 @@
+D:\WorkSpace\RetailEdge\RetailEdge\bin\Debug\net8.0\RetailEdge.deps.json
+D:\WorkSpace\RetailEdge\RetailEdge\bin\Debug\net8.0\RetailEdge.dll
+D:\WorkSpace\RetailEdge\RetailEdge\bin\Debug\net8.0\RetailEdge.pdb
+D:\WorkSpace\RetailEdge\RetailEdge\obj\Debug\net8.0\RetailEdge.csproj.AssemblyReference.cache
+D:\WorkSpace\RetailEdge\RetailEdge\obj\Debug\net8.0\RetailEdge.GeneratedMSBuildEditorConfig.editorconfig
+D:\WorkSpace\RetailEdge\RetailEdge\obj\Debug\net8.0\RetailEdge.AssemblyInfoInputs.cache
+D:\WorkSpace\RetailEdge\RetailEdge\obj\Debug\net8.0\RetailEdge.AssemblyInfo.cs
+D:\WorkSpace\RetailEdge\RetailEdge\obj\Debug\net8.0\RetailEdge.csproj.CoreCompileInputs.cache
+D:\WorkSpace\RetailEdge\RetailEdge\obj\Debug\net8.0\RetailEdge.sourcelink.json
+D:\WorkSpace\RetailEdge\RetailEdge\obj\Debug\net8.0\RetailEdge.dll
+D:\WorkSpace\RetailEdge\RetailEdge\obj\Debug\net8.0\refint\RetailEdge.dll
+D:\WorkSpace\RetailEdge\RetailEdge\obj\Debug\net8.0\RetailEdge.pdb
+D:\WorkSpace\RetailEdge\RetailEdge\obj\Debug\net8.0\ref\RetailEdge.dll
