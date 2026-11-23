@@ -1,0 +1,219 @@
+# Assessment Prompts
+
+This file records the user prompts used during this assessment.
+
+## 1. Project structure request
+
+```text
+create project structure like below
+
+RetailEdge/
+├── .github/
+│   └── copilot-instructions.md
+├── src/
+│   ├── inventory/
+│   │   ├── [model file]           # AI-generated, unreviewed
+│   │   └── [service file]         # AI-generated, unreviewed
+│   └── cart/
+│       └── (empty — your feature goes here)
+├── tests/                         # Empty
+├── README.md                      # Needs your tech stack declaration
+└── [dependency file]
+```
+
+## 2. Empty structure clarification
+
+```text
+create only structure with empty file content , i will give my assignment details later then update files
+```
+
+## 3. Case study README review request
+
+```text
+i have to work on below case study , review and update README.md file
+
+Case Study: RetailEdge
+— Cart Abandonment Recovery System
+
+Background
+
+You are an AI Augmented Software
+Engineer at RetailEdge, a mid-sized omnichannel retailer with both an
+e-commerce platform and physical stores across the country. RetailEdge operates
+a microservices-based backend that powers the customer-facing web store, mobile
+app, and in-store POS terminals. The engineering team is actively adopting
+GitHub Copilot as its standard AI development tool.
+
+The product team has escalated a
+high-priority initiative for the upcoming sprint: a Cart Abandonment Recovery
+System. Analytics have revealed that over 60% of online shoppers add items to
+their cart but leave without completing a purchase. RetailEdge wants to
+automatically detect these abandoned carts and trigger personalised recovery
+workflows — discount vouchers, reminder notifications, and restocking alerts —
+to convert lost intent into completed orders.
+
+You have been assigned this
+feature. Your tech lead has given you an initial brief, a piece of existing
+code to work with, and a set of delivery expectations. You will use GitHub
+Copilot throughout — but your job is not just to generate code. You are expected
+to engineer the context that shapes AI output, validate what Copilot produces,
+specify intent with precision, and design systems that hold up under production
+scrutiny.
+
+Part 1 — Tech Lead’s
+Brief
+
+“We need to tackle cart
+abandonment properly this sprint. Here is what the product team is asking for:
+
+A customer browses the store,
+adds items to their cart, and then leaves without checking out. After 30
+minutes of inactivity, the system should flag the cart as abandoned. Once
+flagged, it should trigger a recovery workflow — send the customer a personalised
+notification (email or push), optionally attach a one-time discount voucher if
+the cart value exceeds a threshold, and log the event for analytics. If the
+customer completes the purchase within 24 hours, mark the recovery as
+successful and record the conversion.
+
+One more thing — last sprint,
+a junior engineer used Copilot to generate our Inventory Sync module. It was
+committed directly to the repo and has never been reviewed properly. It is
+sitting under src/inventory/. I need you to review it before we build anything
+that depends on it. Fix what needs fixing and make sure it meets our
+engineering standards.
+
+Use GitHub Copilot for
+everything — but do it right. Set up the project context file before you write
+a single line of feature code. I want clean architecture, solid tests, proper
+security thinking, and a PR I can review with confidence.”
+```
+
+## 4. Prompt archive request
+
+```text
+Important Instruct : save all
+prompts used during this assessment in a separate file (PROMPTS.md) for
+reference and review.
+```
+
+## 5. Automatic prompt saving question
+
+```text
+prompts which will use it will automaticly save into file ?
+```
+
+## 6. Prompt recording process request
+
+```text
+then how can save used prompts during this assignment in prompts.md
+```
+
+## 7. Copilot instructions update request
+
+```text
+please update in copilot-instuction.md
+```
+
+## 8. README workflow instruction request
+
+```text
+i want rule in instruction.md - going forward whenever i asked to do any task , any file update or any assignment step then it should read readme.md file for casestudy info of assignment and work acordingly
+```
+
+## 9. Detailed Copilot instructions request
+
+```text
+update instructions.md file and it should cover below points
+
+•	Technology stack declaration
+•	Architecture conventions (model → repository → service → controller)
+•	Coding standards (naming, type annotations, structured logging)
+•	Retail-specific domain rules (decimal types for currency — never float, store_id/customer_id scoping, customer PII handling)
+•	Security rules: JWT algorithm pinned to RS256 or HS256, DTO whitelisting on all write endpoints, token expiry validation (exp/iat/nbf)
+•	Broken Object Level Authorisation rule with scoping to authenticated user context
+•	Performance rules: cursor-based pagination required, configurable batch processing for detection scans, minimum 2 database index declarations
+•	Testing expectations
+```
+
+## 10. Security, performance, and authorisation compliance request
+
+```text
+ensure instructions.md have below details if not please update
+
+**Security, Performance & Authorisation Rules (Required
+in copilot-instructions.md)**
+
+The following rules must be
+explicitly defined in your context file and will be evaluated as part of
+Section A scoring:
+
+**Security:**
+
+• JWT algorithm must be explicitly pinned to RS256 or
+HS256 — the alg: none attack vector must be rejected at the middleware layer;
+Copilot-generated JWT verification code must be reviewed for this vulnerability
+
+• All write endpoints must use a Data Transfer Object
+(DTO) that explicitly whitelists permitted fields — direct model binding from
+the request body is prohibited; mass assignment is a common AI-generated
+vulnerability
+
+• JWT middleware must explicitly validate exp, iat, and
+nbf claims in addition to the signature — token expiry validation is frequently
+omitted by AI-generated authentication code; failure to validate any claim must
+return 401 with a specific error code
+
+**Performance:**
+
+• All list endpoints must implement cursor-based
+pagination using cursor and limit request parameters and nextCursor and hasMore
+in the response — offset-based pagination using page or skip is explicitly
+prohibited
+
+• The cart abandonment detection scan must accept a
+configurable batchSize parameter; each batch must be committed independently so
+a mid-run failure does not roll back the entire scan; the scan must be
+restartable from the last successfully processed cursor
+
+• A minimum of 2 database indexes must be declared in
+SPEC.md and in ORM model definitions — specifying column(s), index type
+(B-tree, composite, or partial), and the specific query each index supports
+
+**Authorisation:**
+
+• Every endpoint that fetches a resource by ID must
+verify that the requesting user owns or has explicit permission for that
+specific resource — authentication alone is not sufficient; this is the Broken
+Object Level Authorisation vulnerability and is the most common API security
+flaw in AI-generated code
+
+• Middleware must extract and validate store_id,
+customer_id, role, and scope claims from the JWT payload — all database queries
+must be scoped to the authenticated customer’s store context; a customer must
+not be able to access cart, order, or voucher records belonging to another
+customer, and store-level operations such as the abandonment scan and analytics
+must be restricted to the authenticated store_id only
+
+• Admin-only endpoints (scan trigger, analytics summary)
+must be tested with a non-admin token and must return 403 with a
+machine-readable error code — not a generic 401 or 500
+```
+
+## 10. Inventory model and service request
+
+```text
+Generate an Inventory model and an Inventory
+service with create, update-stock, get-by-product, and delete functions. Use a
+database.
+```
+
+## 11. Inventory review document request
+
+```text
+Create REVIEW.md — A structured code review documenting every issue found above:
+-	What the issue is, where it is, its severity (Critical / High / Medium / Low), and its impact in a retail context
+-	How you detected it — your review process, including where Copilot assisted and where your own engineering judgment was required
+-	The fix you applied or recommend
+-	Security-specific review: check for JWT algorithm pinning, mass assignment vulnerabilities, token expiry validation, and Broken Object Level Authorisation gaps in any authentication-related code generated
+-	A mandatory closing section: “Issues Copilot Introduced That Required Human Judgment” — what did the AI get wrong that only an engineer would catch? This section must include at least one retail-specific risk that Copilot introduced — for example: use of float instead of decimal for unit prices or cart totals, a missing stock level constraint that would allow negative inventory, a voucher code exposed in a public-facing API response payload, customer PII (email or name) logged in plain text in a notification event, or a missing store_id scope check that would allow cross-store inventory access
+```

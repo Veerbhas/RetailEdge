@@ -1,1 +1,140 @@
 # RetailEdge
+
+## Case study
+
+RetailEdge is a microservices-based omnichannel retailer serving a web store,
+mobile app, and physical-store POS terminals. This repository implements the
+Cart Abandonment Recovery System.
+
+The system must:
+
+- Identify a cart as abandoned after 30 minutes of customer inactivity.
+- Start a recovery workflow after abandonment is detected.
+- Send a personalised email or push notification to the customer.
+- Optionally attach a one-time discount voucher when the cart value exceeds
+  the configured voucher threshold.
+- Record the abandonment and recovery events for analytics.
+- Mark a recovery as successful when the customer completes checkout within
+  24 hours.
+- Record the conversion associated with the successful recovery.
+
+The inventory module must also be reviewed before any feature code relies on
+it. Existing inventory code must not be treated as production-ready merely
+because AI generated it.
+
+## Tech stack
+
+- C# 12
+- .NET 8
+- ASP.NET Core for any HTTP endpoints
+- xUnit for unit and integration tests
+- GitHub Copilot for AI-assisted engineering
+
+This project uses .NET 8 conventions and the repository's current C# toolchain.
+Dependencies and test frameworks should be added only when implementation
+requires them.
+
+## Repository structure
+
+```text
+RetailEdge/
+├── .github/
+│   └── copilot-instructions.md
+├── src/
+│   ├── inventory/
+│   │   ├── model.cs
+│   │   ├── service.cs
+│   │   ├── InventoryDbContext.cs
+│   │   ├── IInventoryRepository.cs
+│   │   ├── InventoryRepository.cs
+│   │   └── InventoryServiceCollectionExtensions.cs
+│   └── cart/
+├── tests/
+│   ├── InventoryServiceTests.cs
+│   └── RetailEdge.Tests.csproj
+├── README.md
+└── RetailEdge.csproj
+```
+
+Production source belongs under `src/`. Automated tests belong under `tests/`.
+
+## Inventory service
+
+The inventory service uses SQLite through Entity Framework Core. Register it
+with `AddInventory(connectionString)` and call
+`InitializeInventoryDatabaseAsync()` during application startup. The database
+enforces one inventory row per product and rejects negative stock quantities.
+`UpdateStockAsync` sets the product's current stock quantity; it does not apply
+a quantity delta. Missing products return `null` from `GetByProductAsync`, cause
+`UpdateStockAsync` to throw `KeyNotFoundException`, and make `DeleteAsync`
+return `false`.
+
+Create and update operations accept nonnegative whole-number stock quantities.
+Product IDs are trimmed, required, limited to 100 characters, and uniquely
+indexed.
+
+## Engineering goals
+
+- Keep domain rules separated from infrastructure and delivery concerns.
+- Use explicit models and application services instead of putting business logic
+  in controllers or notification providers.
+- Make time-based behavior testable with an injectable clock rather than direct
+  calls to the system clock.
+- Prefer idempotent recovery and conversion operations so retries and duplicate
+  events do not create duplicate notifications or conversions.
+- Use dependency injection and interface boundaries for notification, voucher,
+  analytics, inventory, and persistence integrations.
+- Emit structured logs and correlation identifiers for traceability.
+- Never log payment, credentials, tokens, or other sensitive customer data.
+- Validate and authorise all externally supplied identifiers and thresholds.
+- Configure voucher thresholds and recovery timing through configuration, not
+  hard-coded feature values.
+- Avoid vendor lock-in in domain code.
+
+## Inventory review gate
+
+Before implementing cart recovery integration with inventory, inspect
+`src/inventory/model.cs` and `src/inventory/service.cs` and verify:
+
+- Data types, nullability, and validation match the inventory domain.
+- Synchronisation behavior is deterministic and handles retries safely.
+- Partial failures, duplicates, and stale data are handled correctly.
+- Concurrency and scaling concerns are addressed.
+- External boundaries have appropriate error handling and logging.
+- Sensitive data is not exposed or logged.
+- Automated tests cover normal and failure cases.
+
+Document review findings before production code depends on this module.
+Fix defects or replace unreviewed AI-generated code before integration.
+
+## Cart abandonment workflow
+
+The intended domain workflow is:
+
+1. Record cart activity and update the customer's cart.
+2. Detect carts inactive for at least 30 minutes.
+3. Mark the cart abandoned exactly once.
+4. Create a recovery event for analytics.
+5. Send a personalised notification through email or push.
+6. Create and attach a one-time voucher only when configured cart-value rules
+   are satisfied.
+7. When checkout completes within 24 hours of abandonment, mark the recovery
+   successful and record a conversion.
+8. Prevent duplicate notifications and duplicate conversions from retries or
+   repeated events.
+
+The notification and voucher outcomes must be durable and observable. Failures
+should not silently discard a recovery request.
+
+## Delivery requirements
+
+AI-generated changes must be:
+
+- Grounded in the requirements in this README and repository conventions.
+- Reviewed for correctness, security, maintainability, and test coverage.
+- Covered by the smallest meaningful automated tests.
+- Validated with build and test commands before review.
+- Explained where assumptions or trade-offs affect behavior.
+
+No production or test implementation should be added without requirements,
+scope, or assignment details defining the expected behavior.
