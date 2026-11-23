@@ -20,7 +20,7 @@ public static class InventoryServiceCollectionExtensions
         return services;
     }
 
-    public static async Task InitializeInventoryDatabaseAsync(
+    public static async Task MigrateInventoryDatabaseAsync(
         this IServiceProvider serviceProvider,
         CancellationToken cancellationToken = default)
     {
@@ -29,6 +29,6 @@ public static class InventoryServiceCollectionExtensions
         await using AsyncServiceScope scope = serviceProvider.CreateAsyncScope();
         InventoryDbContext dbContext =
             scope.ServiceProvider.GetRequiredService<InventoryDbContext>();
-        await dbContext.Database.EnsureCreatedAsync(cancellationToken);
+        await dbContext.Database.MigrateAsync(cancellationToken);
     }
 }

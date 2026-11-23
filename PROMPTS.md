@@ -217,3 +217,9 @@ Create REVIEW.md — A structured code review documenting every issue found abov
 -	Security-specific review: check for JWT algorithm pinning, mass assignment vulnerabilities, token expiry validation, and Broken Object Level Authorisation gaps in any authentication-related code generated
 -	A mandatory closing section: “Issues Copilot Introduced That Required Human Judgment” — what did the AI get wrong that only an engineer would catch? This section must include at least one retail-specific risk that Copilot introduced — for example: use of float instead of decimal for unit prices or cart totals, a missing stock level constraint that would allow negative inventory, a voucher code exposed in a public-facing API response payload, customer PII (email or name) logged in plain text in a notification event, or a missing store_id scope check that would allow cross-store inventory access
 ```
+
+## 12. Inventory sync production rewrite request
+
+```text
+Review and Rewrite the Inventory Sync module to support production standards
+```

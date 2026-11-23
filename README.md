@@ -47,7 +47,9 @@ RetailEdge/
 │   │   ├── InventoryDbContext.cs
 │   │   ├── IInventoryRepository.cs
 │   │   ├── InventoryRepository.cs
-│   │   └── InventoryServiceCollectionExtensions.cs
+│   │   ├── InventoryServiceCollectionExtensions.cs
+│   │   ├── InventoryConcurrencyException.cs
+│   │   └── Migrations/
 │   └── cart/
 ├── tests/
 │   ├── InventoryServiceTests.cs
@@ -60,18 +62,28 @@ Production source belongs under `src/`. Automated tests belong under `tests/`.
 
 ## Inventory service
 
-The inventory service uses SQLite through Entity Framework Core. Register it
-with `AddInventory(connectionString)` and call
-`InitializeInventoryDatabaseAsync()` during application startup. The database
-enforces one inventory row per product and rejects negative stock quantities.
-`UpdateStockAsync` sets the product's current stock quantity; it does not apply
-a quantity delta. Missing products return `null` from `GetByProductAsync`, cause
-`UpdateStockAsync` to throw `KeyNotFoundException`, and make `DeleteAsync`
-return `false`.
+The inventory service uses SQLite through Entity Framework Core. Each inventory
+row is scoped by store and product, so the same product can have different stock
+levels at different locations. The database enforces a unique `(StoreId,
+ProductId)` pair and rejects negative stock quantities. Product IDs are
+trimmed, required, and limited to 100 characters.
 
-Create and update operations accept nonnegative whole-number stock quantities.
-Product IDs are trimmed, required, limited to 100 characters, and uniquely
-indexed.
+`UpdateStockAsync` sets the current stock quantity (it does not apply a delta)
+and requires the version read by the caller. A stale version raises
+`InventoryConcurrencyException` instead of overwriting newer stock. Missing
+records return `null` from `GetByProductAsync`, cause `UpdateStockAsync` to
+throw `KeyNotFoundException`, and make `DeleteAsync` return `false`. Call
+`MigrateInventoryDatabaseAsync()` from a single deployment step to apply the
+included EF Core migration; do not run migrations concurrently from every
+application replica. The included initial migration targets SQLite and is for
+new installations. Do not apply it directly to a database created with the
+earlier `EnsureCreated` schema. Existing databases need a reviewed upgrade
+migration and an approved mapping of each existing row to a store; no store
+identity is guessed automatically.
+
+Creating a second inventory record for the same store and product raises
+`InventoryAlreadyExistsException`. The optimistic version must be refreshed
+after a concurrency conflict before retrying an update.
 
 ## Engineering goals
 

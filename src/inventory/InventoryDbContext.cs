@@ -16,14 +16,19 @@ public sealed class InventoryDbContext(DbContextOptions<InventoryDbContext> opti
                     "CK_inventory_stock_nonnegative",
                     "StockQuantity >= 0"));
             entity.HasKey(inventory => inventory.Id);
+            entity.Property(inventory => inventory.StoreId)
+                .IsRequired();
             entity.Property(inventory => inventory.ProductId)
                 .IsRequired()
                 .HasMaxLength(Inventory.MaximumProductIdLength);
             entity.Property(inventory => inventory.StockQuantity)
                 .IsRequired();
-            entity.HasIndex(inventory => inventory.ProductId)
+            entity.Property(inventory => inventory.Version)
+                .IsConcurrencyToken()
+                .IsRequired();
+            entity.HasIndex(inventory => new { inventory.StoreId, inventory.ProductId })
                 .IsUnique()
-                .HasDatabaseName("UX_inventory_product_id");
+                .HasDatabaseName("UX_inventory_store_product");
         });
     }
 }
