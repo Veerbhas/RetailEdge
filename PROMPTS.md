@@ -385,3 +385,10 @@ work on Cart Abandonment Detection Service and it should 30-minute threshold, co
 ```text
 work on Recovery Tracking Service and it should cover 24-hour window, Broken Object Level Authorisation check, conversion and expiry logic
 ```
+
+## 18. API endpoint request
+
+```text
+make below API endpoints we have
+•	API Endpoints : cursor-based pagination on analytics endpoint, 403 response for non-admin on scan trigger
+```
