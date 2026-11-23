@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace RetailEdge.Cart;
 
@@ -14,6 +15,11 @@ public static class CartServiceCollectionExtensions
 
         services.AddDbContext<CartDbContext>(
             options => options.UseSqlite(connectionString));
+        services.TryAddSingleton(TimeProvider.System);
+        services.AddOptions<AbandonmentDetectionOptions>()
+            .BindConfiguration(AbandonmentDetectionOptions.SectionName)
+            .ValidateOnStart();
+        services.AddScoped<IAbandonmentDetectionService, AbandonmentDetectionService>();
 
         return services;
     }

@@ -29,6 +29,9 @@ public sealed class InitialCart : Migration
                 AbandonmentTimestamp = table.Column<DateTimeOffset>(
                     type: "TEXT",
                     nullable: true),
+                AbandonmentTimestampTicks = table.Column<long>(
+                    type: "INTEGER",
+                    nullable: true),
                 RecoveryStatus = table.Column<int>(type: "INTEGER", nullable: false),
                 VoucherCode = table.Column<string>(
                     type: "TEXT",
@@ -39,6 +42,9 @@ public sealed class InitialCart : Migration
                     nullable: true),
                 LastActivityTimestamp = table.Column<DateTimeOffset>(
                     type: "TEXT",
+                    nullable: false),
+                LastActivityTimestampTicks = table.Column<long>(
+                    type: "INTEGER",
                     nullable: false),
                 Version = table.Column<int>(type: "INTEGER", nullable: false)
             },
@@ -127,6 +133,11 @@ public sealed class InitialCart : Migration
             name: "IX_cart_abandonment_scan",
             table: "cart",
             columns: new[] { "CheckoutStatus", "LastActivityTimestamp", "Id" });
+
+        migrationBuilder.CreateIndex(
+            name: "IX_cart_abandonment_scan_ticks",
+            table: "cart",
+            columns: new[] { "CheckoutStatus", "LastActivityTimestampTicks", "Id" });
 
         migrationBuilder.CreateIndex(
             name: "IX_cart_owner_recovery",

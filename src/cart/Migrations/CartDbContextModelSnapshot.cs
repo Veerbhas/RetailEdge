@@ -24,6 +24,10 @@ public sealed class CartDbContextModelSnapshot : ModelSnapshot
             entity.Property(cart => cart.Currency)
                 .HasMaxLength(3)
                 .HasColumnType("TEXT");
+            entity.Property(cart => cart.LastActivityTimestampTicks)
+                .HasColumnType("INTEGER");
+            entity.Property(cart => cart.AbandonmentTimestampTicks)
+                .HasColumnType("INTEGER");
             entity.Property(cart => cart.VoucherCode)
                 .HasMaxLength(100)
                 .HasColumnType("TEXT");
@@ -37,6 +41,12 @@ public sealed class CartDbContextModelSnapshot : ModelSnapshot
                 cart.LastActivityTimestamp,
                 cart.Id
             }).HasDatabaseName("IX_cart_abandonment_scan");
+            entity.HasIndex(cart => new
+            {
+                cart.CheckoutStatus,
+                cart.LastActivityTimestampTicks,
+                cart.Id
+            }).HasDatabaseName("IX_cart_abandonment_scan_ticks");
             entity.HasIndex(cart => new
             {
                 cart.CustomerId,

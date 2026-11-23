@@ -32,6 +32,7 @@ public sealed class CartDbContext(DbContextOptions<CartDbContext> options)
             entity.Property(cart => cart.VoucherCode)
                 .HasMaxLength(100);
             entity.Property(cart => cart.LastActivityTimestamp).IsRequired();
+            entity.Property(cart => cart.LastActivityTimestampTicks).IsRequired();
             entity.Property(cart => cart.Version)
                 .IsConcurrencyToken()
                 .IsRequired();
@@ -42,6 +43,13 @@ public sealed class CartDbContext(DbContextOptions<CartDbContext> options)
                 cart.LastActivityTimestamp,
                 cart.Id
             }).HasDatabaseName("IX_cart_abandonment_scan");
+
+            entity.HasIndex(cart => new
+            {
+                cart.CheckoutStatus,
+                cart.LastActivityTimestampTicks,
+                cart.Id
+            }).HasDatabaseName("IX_cart_abandonment_scan_ticks");
 
             entity.HasIndex(cart => new
             {

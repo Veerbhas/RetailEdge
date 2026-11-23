@@ -373,3 +373,9 @@ create the Cart Abandonment Recovery System :
 
 •	Generate Abandoned Cart Model (decimal for all monetary fields, version field, ORM with index declarations)
 ```
+
+## 16. Cart Abandonment Detection Service request
+
+```text
+work on Cart Abandonment Detection Service and it should 30-minute threshold, configurable batch scan with cursor restartability, voucher threshold evaluation using decimal
+```

@@ -112,6 +112,7 @@ public sealed class AbandonedCart
         Currency = currency;
         CheckoutStatus = CartCheckoutStatus.Pending;
         LastActivityTimestamp = lastActivityTimestamp;
+        LastActivityTimestampTicks = lastActivityTimestamp.UtcTicks;
         RecoveryStatus = CartRecoveryStatus.Pending;
         Version = 1;
         this.items = items.ToList();
@@ -133,6 +134,8 @@ public sealed class AbandonedCart
 
     public DateTimeOffset? AbandonmentTimestamp { get; private set; }
 
+    public long? AbandonmentTimestampTicks { get; private set; }
+
     public CartRecoveryStatus RecoveryStatus { get; private set; }
 
     public string? VoucherCode { get; private set; }
@@ -140,6 +143,8 @@ public sealed class AbandonedCart
     public DateTimeOffset? RecoveryTimestamp { get; private set; }
 
     public DateTimeOffset LastActivityTimestamp { get; private set; }
+
+    public long LastActivityTimestampTicks { get; private set; }
 
     public int Version { get; private set; }
 
@@ -237,6 +242,7 @@ public sealed class AbandonedCart
 
         CheckoutStatus = CartCheckoutStatus.Abandoned;
         AbandonmentTimestamp = abandonmentTimestamp;
+        AbandonmentTimestampTicks = abandonmentTimestamp.UtcTicks;
         RecoveryStatus = CartRecoveryStatus.Pending;
         Version = checked(Version + 1);
     }
