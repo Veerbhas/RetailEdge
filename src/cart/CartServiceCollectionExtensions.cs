@@ -19,7 +19,11 @@ public static class CartServiceCollectionExtensions
         services.AddOptions<AbandonmentDetectionOptions>()
             .BindConfiguration(AbandonmentDetectionOptions.SectionName)
             .ValidateOnStart();
+        services.AddOptions<RecoveryTrackingOptions>()
+            .BindConfiguration(RecoveryTrackingOptions.SectionName)
+            .ValidateOnStart();
         services.AddScoped<IAbandonmentDetectionService, AbandonmentDetectionService>();
+        services.AddScoped<IRecoveryTrackingService, RecoveryTrackingService>();
 
         return services;
     }

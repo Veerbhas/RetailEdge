@@ -379,3 +379,9 @@ create the Cart Abandonment Recovery System :
 ```text
 work on Cart Abandonment Detection Service and it should 30-minute threshold, configurable batch scan with cursor restartability, voucher threshold evaluation using decimal
 ```
+
+## 17. Recovery Tracking Service request
+
+```text
+work on Recovery Tracking Service and it should cover 24-hour window, Broken Object Level Authorisation check, conversion and expiry logic
+```
