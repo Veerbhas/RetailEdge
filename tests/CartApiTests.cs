@@ -35,6 +35,47 @@ public sealed class CartApiTests
     }
 
     [Fact]
+    public async Task CustomerACannotAccessCustomerBCartRecovery()
+    {
+        await using ApiTestContext context = await ApiTestContext.CreateAsync();
+        Guid customerAId = Guid.NewGuid();
+        Guid customerBId = Guid.NewGuid();
+        AbandonedCart customerBCart = AbandonedCart.Create(
+            customerBId,
+            Guid.NewGuid(),
+            [(Guid.NewGuid(), 1, 25m)],
+            "USD",
+            context.Now.AddHours(-1));
+        customerBCart.MarkAbandoned(context.Now);
+        context.DbContext.Carts.Add(customerBCart);
+        await context.DbContext.SaveChangesAsync();
+
+        context.Controller.ControllerContext = new ControllerContext
+        {
+            HttpContext = new DefaultHttpContext
+            {
+                User = new ClaimsPrincipal(
+                    new ClaimsIdentity(
+                        [
+                            new Claim("customer_id", customerAId.ToString()),
+                            new Claim("role", "customer")
+                        ],
+                        "Test"))
+            }
+        };
+
+        IActionResult response =
+            await context.Controller.GetRecovery(
+                customerBCart.Id,
+                CancellationToken.None);
+
+        var objectResult = Assert.IsType<ObjectResult>(response);
+        Assert.Equal(StatusCodes.Status403Forbidden, objectResult.StatusCode);
+        var body = Assert.IsType<CartApiErrorResponse>(objectResult.Value);
+        Assert.Equal("CART_ACCESS_DENIED", body.Error.Code);
+    }
+
+    [Fact]
     public async Task AnalyticsUsesCursorPagination()
     {
         await using ApiTestContext context = await ApiTestContext.CreateAsync();

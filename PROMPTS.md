@@ -392,3 +392,47 @@ work on Recovery Tracking Service and it should cover 24-hour window, Broken Obj
 make below API endpoints we have
 •	API Endpoints : cursor-based pagination on analytics endpoint, 403 response for non-admin on scan trigger
 ```
+
+## 19. Test coverage and prompt documentation request
+
+```text
+for **— Prompt Engineering Documentation** Requirements is:
+•	Must show at least 2 different Copilot features used across the chain (e.g. Ask Mode, Edit Mode, Agent Mode, #file, @workspace, /tests)
+•	Must show at least 3 different prompting techniques (Specificity, Decomposition, Few-shot, Constraint-based, Role-based, Iterative Refinement)
+•	At least 1 prompt must include an explicit security or retail constraint (JWT pinning, DTO whitelisting, Broken Object Level Authorisation, cursor pagination, decimal currency, store_id scoping)
+```
+
+# Prompt Engineering Documentation
+
+| Prompt # | Prompt Text | Copilot Feature Used | Technique Applied | Why This Approach |
+|---|---|---|---|---|
+| 1 | Create the RetailEdge repository structure. | Agent Mode | Decomposition | Separates repository setup from later feature implementation. |
+| 2 | Add case-study information and engineering goals to `README.md`. | Agent Mode + Edit Mode | Specificity | Gives the implementation a persistent source of project requirements. |
+| 3 | Define architecture, JWT, DTO, BOLA, pagination, and testing rules in Copilot instructions. | Agent Mode + `#file` context | Constraint-based + Decomposition | Explicit constraints prevent mass assignment, weak JWT validation, offset pagination, and cross-object access. |
+| 4 | Create `SPEC.md` for the complete Cart Abandonment Recovery system. | Agent Mode | Decomposition + Iterative Refinement | Converts the feature brief into a traceable implementation blueprint. |
+| 5 | Generate the Abandoned Cart model with `decimal` totals and unit prices, an integer version, ORM mappings, and composite indexes. | Agent Mode + Edit Mode | Specificity + Constraint-based | Required decimal currency prevents binary floating-point errors; ORM indexes support required queries. |
+| 6 | Implement 30-minute abandonment detection with configurable batch size, restartable cursor, and decimal voucher threshold. | Agent Mode + Edit Mode | Decomposition + Iterative Refinement | Splits detection into query, batch transaction, cursor, voucher, notification, and test concerns. |
+| 7 | Implement order conversion and expiry within 24 hours, including a service-layer BOLA customer-owner check. | Agent Mode + Edit Mode | Constraint-based + Iterative Refinement | Makes ownership verification and expiry mutually exclusive and testable. |
+| 8 | Add the scan and analytics APIs, with cursor pagination and machine-readable `403 ADMIN_ROLE_REQUIRED` responses for non-admin users. | Agent Mode + Ask/Chat Mode | Specificity + Constraint-based | Keeps authorization explicit and makes the HTTP contract mechanically testable. |
+| 9 | Add BOLA and admin-only tests, then run `/tests` and address failures. | Agent Mode + `/tests` + Edit Mode | Test-driven refinement + Iterative Refinement | Verifies Customer A cannot access Customer B's cart and non-admin scan requests receive `403`. |
+
+## Prompt Engineering Techniques Demonstrated
+
+- **Specificity:** Names exact fields, thresholds, status values, indexes, DTOs, and HTTP response codes.
+- **Decomposition:** Separates model, ORM, detection, recovery, API, and tests into independent implementation steps.
+- **Constraint-based:** Requires `decimal` currency, JWT pinning, DTO allowlisting, BOLA checks, and cursor pagination.
+- **Iterative Refinement:** Adds migrations, fixes SQLite translations, strengthens cursor behavior, and then adds explicit authorization tests.
+- **Role-based context:** Frames Copilot as a .NET/C# implementation engineer working under RetailEdge architecture and security rules.
+
+## Security and Retail Constraints Demonstrated
+
+At least one prompt explicitly required each major constraint relevant to the
+implementation:
+
+- Use `decimal`, never `float` or `double`, for cart totals and item prices.
+- Use an integer optimistic-concurrency version.
+- Implement Broken Object Level Authorisation: Customer A must not access
+  Customer B's recovery resource.
+- Restrict the scan and analytics endpoints to the admin role.
+- Implement machine-readable `403` errors for non-admin requests.
+- Use cursor-based analytics pagination rather than offset pagination.

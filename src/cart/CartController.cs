@@ -57,7 +57,7 @@ public sealed class CartController(
     [Authorize]
     public async Task<IActionResult> GetRecovery(
         Guid id,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken = default)
     {
         if (!IsAuthenticated())
         {

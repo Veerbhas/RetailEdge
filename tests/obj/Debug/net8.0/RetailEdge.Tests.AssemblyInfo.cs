@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("RetailEdge.Tests")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+918c80f6eb8ba58f6c6ef687d4a779db053426fa")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+e1dec76513ea44a4441a158366a89f9d44396bf9")]
 [assembly: System.Reflection.AssemblyProductAttribute("RetailEdge.Tests")]
 [assembly: System.Reflection.AssemblyTitleAttribute("RetailEdge.Tests")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
