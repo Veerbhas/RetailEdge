@@ -436,3 +436,16 @@ implementation:
 - Restrict the scan and analytics endpoints to the admin role.
 - Implement machine-readable `403` errors for non-admin requests.
 - Use cursor-based analytics pagination rather than offset pagination.
+
+## 20. PR description artifact request
+
+```text
+refer above PR session and create PR_DESCRIPTION.md with:
+
+• Summary of what was built and why
+• AI Tool Disclosure: which Copilot features you used, where you accepted AI output vs overrode it, and your estimate of AI-generated vs hand-written code percentage
+• Security note: how you ensured JWT algorithm pinning, DTO whitelisting, token expiry validation, and Broken Object Level Authorisation were correctly implemented and not introduced incorrectly by Copilot
+• Testing coverage and known gaps
+• At least 1 genuine risk or trade-off in your implementation
+• Self-review checklist you ran before submitting
+```
