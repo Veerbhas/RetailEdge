@@ -143,3 +143,6 @@ D:\WorkSpace\RetailEdge\RetailEdge\tests\obj\Debug\net8.0\refint\RetailEdge.Test
 D:\WorkSpace\RetailEdge\RetailEdge\tests\obj\Debug\net8.0\RetailEdge.Tests.pdb
 D:\WorkSpace\RetailEdge\RetailEdge\tests\obj\Debug\net8.0\RetailEdge.Tests.genruntimeconfig.cache
 D:\WorkSpace\RetailEdge\RetailEdge\tests\obj\Debug\net8.0\ref\RetailEdge.Tests.dll
+D:\WorkSpace\RetailEdge\RetailEdge\tests\bin\Debug\net8.0\RetailEdge.deps.json
+D:\WorkSpace\RetailEdge\RetailEdge\tests\bin\Debug\net8.0\RetailEdge.runtimeconfig.json
+D:\WorkSpace\RetailEdge\RetailEdge\tests\bin\Debug\net8.0\RetailEdge.exe

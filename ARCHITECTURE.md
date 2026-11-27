@@ -21,3 +21,23 @@ This architecture suits RetailEdge because channels can update shared cart state
 Keyset pagination avoids unstable offset scans, while configurable batch limits provide bounded memory and back-pressure during large abandonment scans.
 
 The design trades database/event-transport simplicity for operational resilience: SQLite companion ticks and provider interfaces improve compatibility and vendor independence but add timestamp synchronization and integration-maintenance costs.
+
+## Architecture and Data Flow Diagram
+
+```mermaid
+flowchart LR
+    W[Web / Mobile / POS] -->|cart activity| C[Cart API]
+    C --> S[Cart application services]
+    S --> R[EF Core cart repositories]
+    R --> DB[(SQLite cart database)]
+    SC[Scheduled or admin scan] --> ADS[Abandonment detection service]
+    ADS --> DB
+    ADS --> V[Voucher service]
+    ADS --> N[Email or push notification]
+    O[Order completion event] --> RT[Recovery tracking service]
+    RT --> DB
+    I[Inventory API] --> IS[Inventory service]
+    IS --> IR[EF Core inventory repository]
+    IR --> DB
+    DB --> A[Admin analytics and recovery status]
+```

@@ -179,3 +179,24 @@ AI-generated changes must be:
 
 No production or test implementation should be added without requirements,
 scope, or assignment details defining the expected behavior.
+
+## Running the application
+
+Development mode starts both EF Core databases and the ASP.NET Core API:
+
+```powershell
+$env:ASPNETCORE_ENVIRONMENT="Development"
+dotnet run --project RetailEdge.csproj --urls "http://127.0.0.1:5087"
+```
+
+For production or shared environments, provide
+`Authentication:Jwt:HmacSigningKeyBase64` as a Base64-encoded random key of at
+least 32 bytes, and configure `Authentication:Jwt:Issuer` and
+`Authentication:Jwt:Audience`. The SQLite connection can be overridden with
+`ConnectionStrings:RetailEdge`.
+
+Run the automated suite with:
+
+```powershell
+dotnet test tests/RetailEdge.Tests.csproj
+```

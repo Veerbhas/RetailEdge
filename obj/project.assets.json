@@ -1351,11 +1351,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "D:\\WorkSpace\\RetailEdge\\RetailEdge\\RetailEdge.csproj",
+      "projectUniqueName": "d:\\WorkSpace\\RetailEdge\\RetailEdge\\RetailEdge.csproj",
       "projectName": "RetailEdge",
-      "projectPath": "D:\\WorkSpace\\RetailEdge\\RetailEdge\\RetailEdge.csproj",
+      "projectPath": "d:\\WorkSpace\\RetailEdge\\RetailEdge\\RetailEdge.csproj",
       "packagesPath": "C:\\Users\\hp\\.nuget\\packages\\",
-      "outputPath": "D:\\WorkSpace\\RetailEdge\\RetailEdge\\obj\\",
+      "outputPath": "d:\\WorkSpace\\RetailEdge\\RetailEdge\\obj\\",
       "projectStyle": "PackageReference",
       "configFilePaths": [
         "C:\\Users\\hp\\AppData\\Roaming\\NuGet\\NuGet.Config",
@@ -1415,6 +1415,10 @@
         "downloadDependencies": [
           {
             "name": "Microsoft.AspNetCore.App.Ref",
+            "version": "[8.0.29, 8.0.29]"
+          },
+          {
+            "name": "Microsoft.NETCore.App.Host.win-x64",
             "version": "[8.0.29, 8.0.29]"
           },
           {
