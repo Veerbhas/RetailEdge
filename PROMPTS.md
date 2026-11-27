@@ -459,3 +459,15 @@ Add a second recovery touchpoint: if the customer does not respond to the first 
 
 Produce IMPACT_ANALYSIS.md covering required data-model, service, and API changes; effort and risk; test updates; dependencies and integrations; recommendation to accept as-is, phase, or negotiate scope; retail business impact including voucher margin and email opt-out obligations; recommendation-engine data contracts and PII/data-sharing agreement; migration plan; and how GitHub Copilot assisted and was validated.
 ```
+
+## 22. Tool strategy reflection request
+
+```text
+Create TOOL_STRATEGY.md documenting Copilot usage and critical analysis across the assessment.
+
+Include:
+• Feature Usage Log: minimum 6 entries covering at least 4 features
+• Scenario Responses for legacy cart analysis, cursor pagination, decimal discount verification, persistent team instructions, JWT middleware review, and repository boilerplate generation
+• Security Review: at least 3 AI-specific security risks, including JWT algorithm confusion, mass assignment through missing DTO whitelisting, and Broken Object Level Authorisation
+• Limitations Encountered: 3 real incorrect, incomplete, or inappropriate Copilot outputs
+```
