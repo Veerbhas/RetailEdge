@@ -449,3 +449,13 @@ refer above PR session and create PR_DESCRIPTION.md with:
 • At least 1 genuine risk or trade-off in your implementation
 • Self-review checklist you ran before submitting
 ```
+
+## 21. Scope change impact analysis request
+
+```text
+After completing the initial build, assess this scope change:
+
+Add a second recovery touchpoint: if the customer does not respond to the first notification within 6 hours, send a follow-up with a higher discount. Also feed abandoned cart data into the recommendation engine so suggested products appear in the recovery email.
+
+Produce IMPACT_ANALYSIS.md covering required data-model, service, and API changes; effort and risk; test updates; dependencies and integrations; recommendation to accept as-is, phase, or negotiate scope; retail business impact including voucher margin and email opt-out obligations; recommendation-engine data contracts and PII/data-sharing agreement; migration plan; and how GitHub Copilot assisted and was validated.
+```
