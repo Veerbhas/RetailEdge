@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("RetailEdge")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+88aa4c5e37ff51a7d11c8e5a5aa4b72c2e9f1b1a")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+5b11300466bdba949dc872de495f2a24d1dfad9c")]
 [assembly: System.Reflection.AssemblyProductAttribute("RetailEdge")]
 [assembly: System.Reflection.AssemblyTitleAttribute("RetailEdge")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

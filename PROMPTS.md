@@ -483,3 +483,16 @@ Create ARCHITECTURE.md with 10-15 lines covering:
 • eventual consistency between cart, inventory, and notification services
 • key design decisions and trade-offs
 ```
+
+## Post-Generation Corrections
+
+| # | Copilot Output | Problem | Correction |
+|---|---|---|---|
+| 1 | Inventory used a global product key. | It did not distinguish stock at separate stores. | Added `StoreId` and the unique `(StoreId, ProductId)` index, plus store-scoped operations. |
+| 2 | JWT verification did not include all lifetime requirements. | Copilot could accept expired, unsigned, or future-issued tokens. | Pinned RS256/HS256 and added `exp`, numeric `iat`, `nbf`, issuer, audience, and signature validation. |
+| 3 | Inventory and cart money used or could use floating-point types. | Binary floating point could introduce retail rounding errors. | Used `decimal` and exact SQLite decimal storage. |
+| 4 | Abandoned checkout carts were represented as cancelled. | The status did not match the retail abandonment workflow. | Added `CartCheckoutStatus.Abandoned` and state-transition logic. |
+| 5 | SQLite/LINQ used enum and `DateTimeOffset` operations unsupported by the provider. | Focused tests failed with EF Core translation/order-by errors. | Added EF integer-property comparisons and UTC-tick fields for keyset filtering and ordering. |
+| 6 | The API owner check was not covered by an HTTP-level test. | Service-only ownership logic did not prove a `403` response. | Added Customer A/Customer B API coverage asserting `403 CART_ACCESS_DENIED`. |
+| 7 | The scan cursor could be inserted twice. | The restart cursor raised a SQLite unique-key conflict. | Added cursor existence detection before `Add`. |
+| 8 | Prompt documentation lacked explicit Copilot features and techniques. | It did not satisfy the prompt-engineering documentation format. | Added a feature/technique table and explicit security constraints. |

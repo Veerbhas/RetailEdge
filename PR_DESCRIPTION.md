@@ -95,3 +95,11 @@ SQLite is used for EF persistence, with companion UTC-tick fields for filtering 
 - [x] Project and tests build successfully
 - [ ] Production notification provider is still required
 - [ ] Production voucher redemption store is still required
+
+## Peer Review Simulation
+
+| Comment # | Code Location | What Should Change | Why |
+|---|---|---|---|
+| 1 | `CartController.GetRecovery`, line 58 | Preserve the owner check, but centralize trusted customer-claim validation and consistently reject malformed or missing claims. | Prevents BOLA regressions and inconsistent behavior across `customer_id`, `sub`, and name-identifier claims. |
+| 2 | `AbandonmentDetectionService` notification publish block, line 164 | Add a durable notification outbox and process it through a retry worker rather than treating a provider call as automatically accepted. | Prevents lost notifications, duplicate sends, and false success after provider failure. |
+| 3 | `DefaultVoucherGenerator`, line 48 | Replace deterministic cart-ID-derived codes with cryptographically random, unique, one-time redemption codes backed by redemption state. | Predictable voucher codes and missing redemption enforcement create margin-loss and fraud risk. |
