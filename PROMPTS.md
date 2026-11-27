@@ -471,3 +471,15 @@ Include:
 • Security Review: at least 3 AI-specific security risks, including JWT algorithm confusion, mass assignment through missing DTO whitelisting, and Broken Object Level Authorisation
 • Limitations Encountered: 3 real incorrect, incomplete, or inappropriate Copilot outputs
 ```
+
+## 23. Architecture documentation request
+
+```text
+Create ARCHITECTURE.md with 10-15 lines covering:
+• relationship between Inventory Sync and Cart Abandonment Recovery in the RetailEdge microservices platform
+• layered architecture and data flow from inactivity detection through notification dispatch and conversion tracking
+• cursor pagination and batch processing for abandonment scan scale
+• suitability for web, mobile, and in-store channels
+• eventual consistency between cart, inventory, and notification services
+• key design decisions and trade-offs
+```
